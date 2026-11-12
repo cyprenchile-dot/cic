@@ -65,4 +65,181 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            box-shadow: 0 10px 30px rgba(0,0,0
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        
+        .pointer {
+            position: absolute;
+            top: -5%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: clamp(15px, 2.5vw, 25px) solid transparent;
+            border-right: clamp(15px, 2.5vw, 25px) solid transparent;
+            border-top: clamp(35px, 6vw, 55px) solid #ffffff;
+            z-index: 20;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4));
+        }
+        
+        .center-logo {
+            position: absolute;
+            width: 25%;
+            height: 25%;
+            background-color: white;
+            border-radius: 50%;
+            z-index: 15;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .center-logo:active {
+            transform: scale(0.95);
+        }
+        
+        .center-logo h2 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: clamp(1.2rem, 3.5vw, 2.5rem);
+            font-weight: 900;
+        }
+        
+        .center-logo span {
+            color: #7f8c8d;
+            font-size: clamp(0.7rem, 1.5vw, 1.2rem);
+            font-weight: bold;
+        }
+        
+        .fullscreen-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 100;
+            transition: 0.3s;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>¡Gira y Gana!</h1>
+        <p>Descubre tu premio</p>
+    </div>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="800" height="800"></canvas>
+        <div class="center-logo" id="spinButton">
+            <h2>CIC</h2>
+            <span>114 AÑOS</span>
+        </div>
+    </div>
+    
+    <!-- Botón movido a la esquina inferior derecha para que no estorbe -->
+    <button class="fullscreen-btn" onclick="toggleFullScreen()">⛶ Pantalla Completa</button>
+
+    <script>
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinButton = document.getElementById('spinButton');
+        
+        const prizes = [
+            { text: "Siga participando", color: "#4fb2d9", icon: "😔" },
+            { text: "Regalo CIC", color: "#324451", icon: "🎁" },
+            { text: "Gira de nuevo", color: "#c1c6c8", icon: "🔄" },
+            { text: "Siga participando", color: "#4fb2d9", icon: "😔" },
+            { text: "Regalo CIC", color: "#324451", icon: "🎁" },
+            { text: "Siga participando", color: "#c1c6c8", icon: "😔" }
+        ];
+
+        let currentAngle = 0;
+        let isSpinning = false;
+        let spinVelocity = 0;
+        const friction = 0.985;
+        
+        function drawWheel() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = canvas.width / 2;
+            const sliceAngle = (2 * Math.PI) / prizes.length;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < prizes.length; i++) {
+                const startAngle = currentAngle + i * sliceAngle;
+                const endAngle = startAngle + sliceAngle;
+
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.fillStyle = prizes[i].color;
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = "#ffffff";
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = "right";
+                
+                ctx.fillStyle = (prizes[i].color === "#c1c6c8") ? "#2c3e50" : "#ffffff";
+                
+                ctx.font = "bold 40px Arial";
+                ctx.fillText(prizes[i].icon, radius - 40, 15);
+                ctx.font = "bold 26px Arial";
+                ctx.fillText(prizes[i].text, radius - 100, 10);
+                ctx.restore();
+            }
+        }
+
+        function animate() {
+            if (isSpinning) {
+                currentAngle += spinVelocity;
+                spinVelocity *= friction;
+
+                if (spinVelocity < 0.002) {
+                    isSpinning = false;
+                    spinVelocity = 0;
+                }
+                drawWheel();
+                requestAnimationFrame(animate);
+            }
+        }
+
+        spinButton.addEventListener('click', () => {
+            if (!isSpinning) {
+                spinVelocity = Math.random() * 0.2 + 0.3; 
+                isSpinning = true;
+                animate();
+            }
+        });
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        drawWheel();
+    </script>
+</body>
+</html>
