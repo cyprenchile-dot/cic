@@ -4,16 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ruleta CIC - 114 Años</title>
+    <!-- Librería para el Confeti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #1c2331; /* Fondo corporativo CIC */
+            background-color: #1c2331;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: white;
-            overflow: hidden; /* Evita cualquier barra de desplazamiento */
+            overflow: hidden;
             touch-action: none;
         }
         
@@ -43,18 +45,18 @@
             border-radius: 20px;
             display: inline-block;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            font-weight: bold;
         }
         
-        /* LA SOLUCIÓN DEFINITIVA */
         .wheel-container {
             position: absolute;
-            top: 55%; /* Ligeramente más abajo del centro para dejar espacio al título */
+            top: 55%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 100%;
-            /* Toma el valor MÁS PEQUEÑO entre el ancho y el alto de la pantalla */
             max-width: min(90vw, 70vh); 
-            aspect-ratio: 1 / 1; /* Obliga a que siempre sea un cuadrado perfecto */
+            aspect-ratio: 1 / 1;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -64,27 +66,26 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
         
-        .pointer {
+        /* PUNTERO ORIGINAL RECUPERADO (Círculo + Triángulo Transparente) */
+        .pointer-container {
             position: absolute;
-            top: -5%;
+            top: -10%;
             left: 50%;
             transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: clamp(15px, 2.5vw, 25px) solid transparent;
-            border-right: clamp(15px, 2.5vw, 25px) solid transparent;
-            border-top: clamp(35px, 6vw, 55px) solid #ffffff;
+            width: clamp(50px, 8vw, 80px);
+            height: clamp(75px, 12vw, 120px);
             z-index: 20;
-            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4));
+            filter: drop-shadow(0 6px 6px rgba(0,0,0,0.6));
         }
         
+        /* BOTÓN CENTRAL ORIGINAL RECUPERADO */
         .center-logo {
             position: absolute;
-            width: 25%;
-            height: 25%;
+            width: 32%;
+            height: 32%;
             background-color: white;
             border-radius: 50%;
             z-index: 15;
@@ -92,7 +93,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             cursor: pointer;
             transition: transform 0.1s;
         }
@@ -101,16 +102,56 @@
             transform: scale(0.95);
         }
         
-        .center-logo h2 {
-            color: #2c3e50;
+        .logo-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .logo-row h2 {
+            font-family: 'Georgia', serif; /* Para simular la tipografía de CIC */
+            color: #1c2331;
             margin: 0;
-            font-size: clamp(1.2rem, 3.5vw, 2.5rem);
+            font-size: clamp(2rem, 5vw, 4rem);
             font-weight: 900;
+            letter-spacing: -2px;
         }
         
-        .center-logo span {
-            color: #7f8c8d;
-            font-size: clamp(0.7rem, 1.5vw, 1.2rem);
+        .logo-years {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            line-height: 0.9;
+        }
+
+        .logo-years .num {
+            color: #1c2331;
+            font-size: clamp(1rem, 2vw, 1.8rem);
+            font-weight: 900;
+        }
+
+        .logo-years .text {
+            color: #1c2331;
+            font-size: clamp(0.6rem, 1vw, 1rem);
+            font-weight: 900;
+        }
+
+        .descanso-text {
+            color: #1c2331;
+            font-size: clamp(0.5rem, 1.2vw, 0.9rem);
+            font-weight: 800;
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-mantener {
+            background-color: #4fb2d9;
+            color: white;
+            font-size: clamp(0.5rem, 1vw, 0.8rem);
+            padding: 4px 15px;
+            border-radius: 15px;
+            margin-top: 8px;
             font-weight: bold;
         }
         
@@ -128,9 +169,54 @@
             transition: 0.3s;
         }
 
-        .fullscreen-btn:hover {
-            background: rgba(255,255,255,0.3);
+        /* DISEÑO DE LA PANTALLA DE GANADOR */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(28, 35, 49, 0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
         }
+
+        .modal-content {
+            background: white;
+            color: #1c2331;
+            padding: 50px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 80%;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal h2 { 
+            font-size: clamp(1.5rem, 4vw, 3rem); 
+            margin: 20px 0; 
+            color: #007bb5; 
+            text-transform: uppercase; 
+        }
+
+        .modal button {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background: #007bb5;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .modal button:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -140,40 +226,111 @@
     </div>
 
     <div class="wheel-container">
-        <div class="pointer"></div>
-        <canvas id="wheelCanvas" width="800" height="800"></canvas>
+        <!-- PUNTERO SVG ORIGINAL -->
+        <div class="pointer-container">
+            <svg viewBox="0 0 100 150" width="100%" height="100%">
+                <circle cx="50" cy="30" r="15" fill="transparent" stroke="white" stroke-width="8"/>
+                <path d="M 25 45 L 75 45 L 50 110 Z" fill="transparent" stroke="white" stroke-width="8" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        
+        <canvas id="wheelCanvas" width="1000" height="1000"></canvas>
+        
+        <!-- BOTÓN CENTRAL ORIGINAL -->
         <div class="center-logo" id="spinButton">
-            <h2>CIC</h2>
-            <span>114 AÑOS</span>
+            <div class="logo-row">
+                <h2>CIC</h2>
+                <div class="logo-years">
+                    <span class="num">114</span>
+                    <span class="text">AÑOS</span>
+                </div>
+            </div>
+            <span class="descanso-text">MEJORANDO EL DESCANSO</span>
+            <div class="btn-mantener">MANTÉN PRESIONADO</div>
         </div>
     </div>
     
     <button class="fullscreen-btn" onclick="toggleFullScreen()">⛶ Pantalla Completa</button>
 
+    <!-- VENTANA EMERGENTE DE GANADOR -->
+    <div id="winnerModal" class="modal">
+        <div class="modal-content">
+            <div id="prizeIcon" style="font-size: 6rem; margin-bottom: 10px;">🎁</div>
+            <h2 id="prizeText">Premio</h2>
+            <button onclick="closeModal()">Continuar</button>
+        </div>
+    </div>
+
     <script>
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         const spinButton = document.getElementById('spinButton');
+        const sliceAngle = (2 * Math.PI) / 6;
         
+        // RECUPERACIÓN DE LOS PREMIOS ORIGINALES
         const prizes = [
-            { text: "Siga participando", color: "#4fb2d9", icon: "😔" },
-            { text: "Regalo CIC", color: "#324451", icon: "🎁" },
-            { text: "Gira de nuevo", color: "#c1c6c8", icon: "🔄" },
-            { text: "Siga participando", color: "#4fb2d9", icon: "😔" },
-            { text: "Regalo CIC", color: "#324451", icon: "🎁" },
-            { text: "Siga participando", color: "#c1c6c8", icon: "😔" }
+            { type: "text", text: "Regalo\nCIC", color: "#324451", icon: "🎁" },
+            { type: "discount", number: "5", text: "en el total\nde tu boleta", color: "#4fb2d9", icon: "🎉" },
+            { type: "text", text: "Siga\nparticipando", color: "#c1c6c8", icon: "😔" },
+            { type: "text", text: "Regalo\nCIC", color: "#324451", icon: "🎁" },
+            { type: "discount", number: "15", text: "en el total\nde tu boleta", color: "#4fb2d9", icon: "🎉" },
+            { type: "text", text: "Siga\nparticipando", color: "#c1c6c8", icon: "😔" }
         ];
 
         let currentAngle = 0;
         let isSpinning = false;
         let spinVelocity = 0;
         const friction = 0.985;
+        let lastTick = 0;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTick() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playWinSound() {
+            if (!audioCtx) return;
+            const notes = [523.25, 659.25, 783.99, 1046.50]; 
+            notes.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                const startTime = audioCtx.currentTime + index * 0.1;
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.5, startTime + 0.05);
+                gain.gain.linearRampToValueAtTime(0, startTime + 0.4);
+                osc.start(startTime);
+                osc.stop(startTime + 0.4);
+            });
+        }
         
         function drawWheel() {
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
             const radius = canvas.width / 2;
-            const sliceAngle = (2 * Math.PI) / prizes.length;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -181,26 +338,46 @@
                 const startAngle = currentAngle + i * sliceAngle;
                 const endAngle = startAngle + sliceAngle;
 
+                // Dibujar Tajada
                 ctx.beginPath();
                 ctx.moveTo(centerX, centerY);
                 ctx.arc(centerX, centerY, radius, startAngle, endAngle);
                 ctx.fillStyle = prizes[i].color;
                 ctx.fill();
-                ctx.lineWidth = 4;
+                ctx.lineWidth = 6;
                 ctx.strokeStyle = "#ffffff";
                 ctx.stroke();
 
+                // Dibujar Textos (Recuperando el diseño original)
                 ctx.save();
                 ctx.translate(centerX, centerY);
                 ctx.rotate(startAngle + sliceAngle / 2);
                 ctx.textAlign = "right";
+                ctx.fillStyle = (prizes[i].color === "#c1c6c8") ? "#1c2331" : "#ffffff";
                 
-                ctx.fillStyle = (prizes[i].color === "#c1c6c8") ? "#2c3e50" : "#ffffff";
-                
-                ctx.font = "bold 40px Arial";
-                ctx.fillText(prizes[i].icon, radius - 40, 15);
-                ctx.font = "bold 26px Arial";
-                ctx.fillText(prizes[i].text, radius - 100, 10);
+                if (prizes[i].type === 'discount') {
+                    // Diseño del texto de Descuento
+                    ctx.font = "bold 90px Arial";
+                    ctx.fillText(prizes[i].number, radius - 200, 30);
+                    ctx.font = "bold 25px Arial";
+                    ctx.fillText("% OFF", radius - 100, -10);
+                    ctx.font = "18px Arial";
+                    const lines = prizes[i].text.split('\n');
+                    ctx.fillText(lines[0], radius - 95, 15);
+                    ctx.fillText(lines[1], radius - 95, 38);
+                } else {
+                    // Diseño estándar de Regalo/Siga Participando
+                    ctx.font = "bold 60px Arial";
+                    ctx.fillText(prizes[i].icon, radius - 60, 20);
+                    ctx.font = "bold 32px Arial";
+                    const lines = prizes[i].text.split('\n');
+                    if (lines.length > 1) {
+                        ctx.fillText(lines[0], radius - 150, -5);
+                        ctx.fillText(lines[1], radius - 150, 35);
+                    } else {
+                        ctx.fillText(lines[0], radius - 150, 15);
+                    }
+                }
                 ctx.restore();
             }
         }
@@ -210,17 +387,57 @@
                 currentAngle += spinVelocity;
                 spinVelocity *= friction;
 
+                let currentTick = Math.floor(currentAngle / sliceAngle);
+                if (currentTick !== lastTick) {
+                    playTick();
+                    lastTick = currentTick;
+                }
+
                 if (spinVelocity < 0.002) {
                     isSpinning = false;
                     spinVelocity = 0;
+                    
+                    let offsetAngle = (1.5 * Math.PI - currentAngle) % (2 * Math.PI);
+                    if (offsetAngle < 0) offsetAngle += 2 * Math.PI;
+                    const winningIndex = Math.floor(offsetAngle / sliceAngle);
+                    const prize = prizes[winningIndex];
+
+                    showWinner(prize);
                 }
                 drawWheel();
                 requestAnimationFrame(animate);
             }
         }
 
+        function showWinner(prize) {
+            playWinSound();
+            
+            confetti({
+                particleCount: 250,
+                spread: 100,
+                origin: { y: 0.6 },
+                zIndex: 2000,
+                colors: ['#007bb5', '#ffffff', '#4fb2d9', '#c1c6c8']
+            });
+            
+            // Texto adaptado para el ganador
+            let winText = prize.type === 'discount' ? prize.number + "% OFF " + prize.text.replace('\n', ' ') : prize.text.replace('\n', ' ');
+            
+            document.getElementById('prizeIcon').innerText = prize.icon;
+            document.getElementById('prizeText').innerText = winText;
+            
+            setTimeout(() => {
+                document.getElementById('winnerModal').style.display = 'flex';
+            }, 600);
+        }
+
+        function closeModal() {
+            document.getElementById('winnerModal').style.display = 'none';
+        }
+
         spinButton.addEventListener('click', () => {
             if (!isSpinning) {
+                initAudio(); 
                 spinVelocity = Math.random() * 0.2 + 0.3; 
                 isSpinning = true;
                 animate();
