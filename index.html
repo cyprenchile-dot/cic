@@ -17,7 +17,6 @@
             touch-action: none;
         }
         
-        /* El título queda flotando arriba para no empujar la ruleta */
         .header {
             position: absolute;
             top: 4%;
@@ -46,16 +45,16 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         
-        /* Contenedor forzado al CENTRO EXACTO de la pantalla */
+        /* LA SOLUCIÓN DEFINITIVA */
         .wheel-container {
             position: absolute;
-            top: 53%; /* Ligeramente más abajo del medio para dejar aire al título */
+            top: 55%; /* Ligeramente más abajo del centro para dejar espacio al título */
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 90vw;
-            height: 90vw;
-            max-width: 70vh; /* Limita el tamaño para que nunca se corte arriba o abajo */
-            max-height: 70vh;
+            width: 100%;
+            /* Toma el valor MÁS PEQUEÑO entre el ancho y el alto de la pantalla */
+            max-width: min(90vw, 70vh); 
+            aspect-ratio: 1 / 1; /* Obliga a que siempre sea un cuadrado perfecto */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -149,7 +148,6 @@
         </div>
     </div>
     
-    <!-- Botón movido a la esquina inferior derecha para que no estorbe -->
     <button class="fullscreen-btn" onclick="toggleFullScreen()">⛶ Pantalla Completa</button>
 
     <script>
