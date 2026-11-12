@@ -1,1086 +1,245 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ruleta Promocional Interactiva CIC 114 Años</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons & Confetti (con fallback seguro si no hay internet) -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Montserrat:ital,wght@0,500;0,700;0,800;0,900;1,700;1,800&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Montserrat', sans-serif;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    .cic-serif {
-      font-family: 'Cinzel', Georgia, serif;
-    }
-    .center-pulse {
-      transform: translate(-50%, -50%);
-    }
-    /* Rebote mecánico de la aguja superior */
-    @keyframes pinKick {
-      0% { transform: translateX(-50%) rotate(0deg); }
-      35% { transform: translateX(-50%) rotate(-26deg); }
-      75% { transform: translateX(-50%) rotate(6deg); }
-      100% { transform: translateX(-50%) rotate(0deg); }
-    }
-    .indicator-kick {
-      animation: pinKick 0.14s ease-out;
-    }
-    @keyframes shakePower {
-      0%, 100% { transform: translate(-50%, -50%) scale(1.06) rotate(0deg); }
-      25% { transform: translate(-51%, -49%) scale(1.07) rotate(-1deg); }
-      75% { transform: translate(-49%, -51%) scale(1.07) rotate(1deg); }
-    }
-    .max-power-shake {
-      animation: shakePower 0.08s infinite;
-    }
-  </style>
-</head>
-<body class="bg-gradient-to-b from-[#1b252b] via-[#243138] to-[#161e23] text-white h-screen w-screen overflow-hidden select-none relative flex flex-col items-center justify-center">
-
-  <!-- CONTROLES FLOTANTES (Solo en la esquina superior derecha para mantener limpio el diseño del tótem) -->
-  <div class="fixed top-4 right-4 z-50 flex items-center gap-2 pointer-events-auto">
-    <!-- Botón Sonido -->
-    <button id="soundToggleBtn" class="p-2.5 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-md active:scale-95 transition flex items-center justify-center border border-white/15 shadow-lg" title="Activar/Desactivar Sonido">
-      <svg id="soundOnSvg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-      </svg>
-      <svg id="soundOffSvg" class="w-5 h-5 hidden text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-        <line x1="23" y1="9" x2="17" y2="15"></line>
-        <line x1="17" y1="9" x2="23" y2="15"></line>
-      </svg>
-    </button>
-
-    <!-- Botón Pantalla Completa (Modo Kiosco POS) -->
-    <button id="fullscreenBtn" class="px-3 py-2.5 rounded-xl bg-[#3b96c4]/30 hover:bg-[#3b96c4]/50 backdrop-blur-md text-white active:scale-95 transition flex items-center gap-1.5 border border-[#3b96c4]/60 text-xs font-bold shadow-lg" title="Pantalla Completa">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-      </svg>
-      <span class="hidden sm:inline">PANTALLA COMPLETA</span>
-    </button>
-  </div>
-
-  <!-- CONTENEDOR OPTIMIZADO PARA MONITOR VERTICAL (PORTRAIT KIOSK) -->
-  <main class="w-full h-full flex flex-col items-center justify-between relative overflow-hidden py-10 sm:py-16">
-
-    <!-- TEXTO SUPERIOR (Aprovechando el espacio vertical del monitor) -->
-    <div class="flex flex-col items-center justify-center text-center z-10 px-6 mt-8 sm:mt-12 shrink-0">
-      <h1 class="text-[9vw] sm:text-6xl font-black text-white uppercase tracking-widest drop-shadow-xl leading-none mb-3">¡Gira y Gana!</h1>
-      <div class="bg-[#3b96c4] text-white px-5 py-2.5 rounded-full font-black text-sm sm:text-xl uppercase tracking-[0.2em] shadow-[0_4px_20px_rgba(59,150,196,0.4)] border border-white/20">
-        Descubre tu premio
-      </div>
-    </div>
-
-    <!-- Marco de la Ruleta (Adaptado a ancho completo en vertical manteniendo el círculo perfecto) -->
-    <div class="relative w-[92vw] h-[92vw] max-w-[800px] max-h-[800px] flex items-center justify-center rounded-full shadow-[0_0_100px_rgba(0,0,0,0.85)] my-auto shrink-0 transition-transform duration-300">
-
-      <!-- AGUJA / PUNTERO ACRÍLICO SUPERIOR (Idéntico al soporte acrílico físico) -->
-      <div id="flapperPin" class="absolute -top-3 left-1/2 -translate-x-1/2 z-30 origin-top pointer-events-none flex flex-col items-center">
-        <!-- Perno metálico -->
-        <div class="w-7 h-7 rounded-full bg-gradient-to-b from-slate-100 to-slate-400 border-2 border-slate-600 shadow-md flex items-center justify-center">
-          <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
-        </div>
-        <!-- Uña acrílica transparente triangular -->
-        <svg width="44" height="52" viewBox="0 0 44 52" class="-mt-2.5 drop-shadow-xl">
-          <polygon points="22,48 4,6 40,6" fill="rgba(255,255,255,0.45)" stroke="rgba(255,255,255,0.92)" stroke-width="2.5" stroke-linejoin="round" />
-        </svg>
-      </div>
-
-      <!-- CANVAS DE LA RULETA (ALTA DEFINICIÓN 1200x1200) -->
-      <canvas id="wheelCanvas" width="1200" height="1200" class="w-full h-full block cursor-grab active:cursor-grabbing touch-none"></canvas>
-
-      <!-- BOTÓN / LOGOTIPO CENTRAL CON MEDIDOR DE INTENSIDAD VISIBLE -->
-      <button id="centerLogoBtn" class="center-pulse absolute top-1/2 left-1/2 rounded-full z-20 w-[29.5%] h-[29.5%] bg-white shadow-[0_6px_30px_rgba(0,0,0,0.45)] flex flex-col items-center justify-center p-2 focus:outline-none transition-transform cursor-pointer touch-none">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ruleta CIC - 114 Años</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1c2331; /* Fondo oscuro elegante CIC */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Evita que la pantalla se mueva o baje */
+            touch-action: none; /* Evita el zoom al tocar en pantallas táctiles */
+        }
         
-        <!-- ANILLO MEDIDOR DE INTENSIDAD (SVG PROGRESIVO ALREDEDOR DEL CENTRO) -->
-        <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none overflow-visible" viewBox="0 0 120 120">
-          <!-- Pista de fondo gris suave -->
-          <circle cx="60" cy="60" r="56" fill="none" stroke="#e2e8f0" stroke-width="6" opacity="0.4" />
-          <!-- Barra de carga dinámica -->
-          <circle id="powerRingCircle" cx="60" cy="60" r="56" fill="none" stroke="#3b96c4" stroke-width="7" stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="351.86" />
-        </svg>
+        .header {
+            text-align: center;
+            margin-bottom: 3vh;
+            z-index: 10;
+        }
+        
+        .header h1 {
+            font-size: clamp(2rem, 6vh, 4rem);
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .header p {
+            font-size: clamp(1rem, 3vh, 1.5rem);
+            margin: 5px 0 0 0;
+            background-color: #007bb5; /* Azul corporativo */
+            padding: 5px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        /* Contenedor que limita el tamaño de la ruleta para que NUNCA se corte */
+        .wheel-container {
+            position: relative;
+            width: 90vw;
+            height: 90vw;
+            max-width: 65vh; /* Se asegura de que quepa en monitores horizontales */
+            max-height: 65vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        
+        .pointer {
+            position: absolute;
+            top: -5%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: clamp(15px, 3vw, 25px) solid transparent;
+            border-right: clamp(15px, 3vw, 25px) solid transparent;
+            border-top: clamp(35px, 6vw, 55px) solid #ffffff;
+            z-index: 20;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4));
+        }
+        
+        .center-logo {
+            position: absolute;
+            width: 25%;
+            height: 25%;
+            background-color: white;
+            border-radius: 50%;
+            z-index: 15;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
 
-        <!-- Logo CIC 114 AÑOS exacto a la gráfica -->
-        <div class="flex items-center justify-center gap-1.5 sm:gap-2 leading-none text-[#303d44] pointer-events-none z-10">
-          <span class="cic-serif font-black text-3xl sm:text-5xl md:text-6xl tracking-tight">CIC</span>
-          <div class="flex flex-col items-center justify-center leading-none border-l-2 border-[#303d44]/20 pl-1.5">
-            <span class="font-black text-base sm:text-2xl md:text-3xl tracking-tighter leading-none">114</span>
-            <span class="font-black text-[7px] sm:text-[10px] md:text-xs tracking-widest leading-none mt-0.5">AÑOS</span>
-          </div>
-        </div>
+        .center-logo:active {
+            transform: scale(0.95);
+        }
+        
+        .center-logo h2 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: clamp(1.2rem, 3.5vw, 2.5rem);
+            font-weight: 900;
+        }
+        
+        .center-logo span {
+            color: #7f8c8d;
+            font-size: clamp(0.7rem, 1.5vw, 1.2rem);
+            font-weight: bold;
+        }
+        
+        .fullscreen-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 100;
+            transition: 0.3s;
+        }
 
-        <span class="mt-1 sm:mt-1.5 text-[7px] sm:text-[10px] md:text-[11px] font-extrabold italic tracking-wider text-[#303d44] uppercase leading-none text-center pointer-events-none z-10">
-          MEJORANDO <span class="font-black not-italic">EL DESCANSO</span>
-        </span>
-
-        <!-- Barra / Píldora indicadora de porcentaje de fuerza -->
-        <div id="chargeBadge" class="mt-1.5 sm:mt-2.5 px-3 py-0.5 sm:py-1 bg-[#3b96c4] text-white font-black text-[9px] sm:text-xs rounded-full uppercase tracking-wider shadow-md pointer-events-none z-10 transition-colors flex items-center gap-1">
-          <span id="chargeTextIndicator">MANTÉN PRESIONADO</span>
-        </div>
-      </button>
-
-    </div>
-
-    <!-- TEXTO INFERIOR E INSTRUCCIONES TÁCTILES VISUALES -->
-    <div class="flex flex-col items-center justify-center text-center z-10 px-6 mb-10 sm:mb-14 shrink-0">
-      <div class="animate-bounce mb-3 text-[#3b96c4]">
-        <svg class="w-12 h-12 sm:w-16 sm:h-16 drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z"></path>
-        </svg>
-      </div>
-      <h2 class="text-[7vw] sm:text-5xl font-black text-white uppercase tracking-wider drop-shadow-lg leading-tight">Desliza la rueda</h2>
-      <p class="text-slate-300 font-bold text-sm sm:text-lg uppercase tracking-[0.15em] mt-3 bg-black/30 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/5">O mantén presionado el logotipo central</p>
-    </div>
-
-  </main>
-
-  <!-- MODAL DE RESULTADO / PREMIO -->
-  <div id="prizeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-  <script>
-    /* =====================================================================
-       FUNCIÓN SEGURA PARA ICONOS LUCIDE (Evita fallos si no hay internet)
-       ===================================================================== */
-    function safeRenderIcons() {
-      if (typeof window.lucide !== 'undefined' && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-      }
-    }
-
-    /* =====================================================================
-       CONFIGURACIÓN EXACTA DE LOS 8 SECTORES (100% FIEL A LA IMAGEN ENVIADA)
-       ===================================================================== */
-    // En la imagen original de CIC, absolutamente todos los íconos y textos son BLANCOS (#ffffff)
-    // y tienen orientaciones específicas según el sector para leerse cómodamente.
-    const SECTORS = [
-      {
-        id: 0, // Arriba-Derecha (0° a 45°)
-        type: 'discount',
-        bg: "#adb8c6", // Gris claro azulado exacto
-        orientation: 'inward', // Mirando hacia el centro como en la foto
-        isWin: true,
-        titleModal: "5% OFF en el total de tu boleta",
-        header: "¡Felicidades!",
-        detail: "Has ganado un 5% de descuento en el total de tu compra."
-      },
-      {
-        id: 1, // Derecha-Arriba (45° a 90°)
-        type: 'faces',
-        bg: "#3b96c4", // Azul Celeste CIC exacto
-        orientation: 'inward',
-        isWin: false,
-        titleModal: "Siga participando",
-        header: "¡Gracias por participar!",
-        detail: "Sigue intentándolo en tu próxima visita a CIC."
-      },
-      {
-        id: 2, // Derecha-Abajo (90° a 135°)
-        type: 'gift',
-        bg: "#303d44", // Gris Carbón Oscuro exacto
-        orientation: 'inward',
-        isWin: true,
-        titleModal: "Regalo CIC",
-        header: "¡Excelente!",
-        detail: "¡Ganaste un Regalo Sorpresa CIC! Solicítalo en tienda."
-      },
-      {
-        id: 3, // Abajo-Derecha (135° a 180°)
-        type: 'spin_again',
-        bg: "#adb8c6", // Gris claro azulado
-        orientation: 'outward', // En la parte inferior el texto queda al borde exterior derecho al lector
-        isWin: false,
-        isSpinAgain: true,
-        titleModal: "Gira de nuevo",
-        header: "¡Tienes otra oportunidad!",
-        detail: "Vuelve a girar la ruleta ahora mismo."
-      },
-      {
-        id: 4, // Abajo-Izquierda (180° a 225°)
-        type: 'faces',
-        bg: "#3b96c4", // Azul Celeste CIC
-        orientation: 'outward',
-        isWin: false,
-        titleModal: "Siga participando",
-        header: "¡Gracias por participar!",
-        detail: "Esperamos que estés disfrutando tu experiencia en CIC."
-      },
-      {
-        id: 5, // Izquierda-Abajo (225° a 270°)
-        type: 'gift',
-        bg: "#303d44", // Gris Carbón Oscuro
-        orientation: 'outward',
-        isWin: true,
-        titleModal: "Regalo CIC",
-        header: "¡Felicitaciones!",
-        detail: "¡Te llevas un Regalo exclusivo de la marca CIC!"
-      },
-      {
-        id: 6, // Izquierda-Arriba (270° a 315°)
-        type: 'faces',
-        bg: "#adb8c6", // Gris claro azulado
-        orientation: 'outward',
-        isWin: false,
-        titleModal: "Siga participando",
-        header: "¡Casi!",
-        detail: "¡Muchas gracias por visitar CIC!"
-      },
-      {
-        id: 7, // Arriba-Izquierda (315° a 360°)
-        type: 'discount',
-        bg: "#303d44", // En la imagen, arriba a la izquierda es Gris Carbón con Regalo CIC, y a su izquierda Celeste 5% OFF
-        // Ajustamos el orden exacto del círculo en sentido horario comenzando a las 12:00:
-        type: 'gift',
-        bg: "#303d44",
-        orientation: 'inward',
-        isWin: true,
-        titleModal: "Regalo CIC",
-        header: "¡Premio Especial!",
-        detail: "¡Ganaste un Regalo Sorpresa CIC!"
-      }
-    ];
-
-    // Ajuste milimétrico de los 8 gajos leyendo la imagen proporcionada en sentido horario desde las 12 en punto:
-    // Las 12:00 en punto es la línea vertical divisoria superior:
-    // 1. (0° a 41°): Gris claro (#adb8c6) -> "5% OFF en el total de tu boleta"
-    // 2. (41° a 82°): Celeste (#3b96c4) -> "Siga participando"
-    // 3. (82° a 126°): Gris oscuro (#303d44) -> "Regalo CIC"
-    // 4. (126° a 166°): Gris claro (#adb8c6) -> "Gira de nuevo"
-    // 5. (166° a 202°): Celeste (#3b96c4) -> "Siga participando" (abajo al centro)
-    // 6. (202° a 242°): Gris oscuro (#303d44) -> "Regalo CIC" (abajo izquierda)
-    // 7. (242° a 282°): Gris claro (#adb8c6) -> "Siga participando" (izquierda)
-    // 8. (282° a 320°): Celeste (#3b96c4) -> "5% OFF en el total de tu boleta" (arriba izquierda)
-    // 9. (320° a 360°): Gris oscuro (#303d44) -> "Regalo CIC" (arriba centro-izquierda)
-    // ¡Nota clave! La imagen original tiene exactamente 9 SECTORES (40 grados cada uno = 360°), por eso las 12:00 es una línea recta vertical y abajo a las 6:00 queda el sector celeste centrado.
-    const EXACT_9_SECTORS = [
-      {
-        // Sector 1: Arriba Derecha (0° a 40°)
-        type: 'discount',
-        bg: "#adb8c6",
-        orientation: 'inward',
-        isWin: true,
-        titleModal: "5% OFF en el total de tu boleta",
-        header: "¡Felicidades!",
-        detail: "Has ganado un 5% de descuento en el total de tu boleta."
-      },
-      {
-        // Sector 2: Derecha Arriba (40° a 80°)
-        type: 'faces',
-        bg: "#3b96c4",
-        orientation: 'inward',
-        isWin: false,
-        titleModal: "Siga participando",
-        header: "¡Gracias por participar!",
-        detail: "Sigue intentándolo en tu próxima visita."
-      },
-      {
-        // Sector 3: Derecha Abajo (80° a 120°)
-        type: 'gift',
-        bg: "#303d44",
-        orientation: 'inward',
-        isWin: true,
-        titleModal: "Regalo CIC",
-        header: "¡Excelente!",
-        detail: "¡Ganaste un Regalo exclusivo CIC! Solicítalo a nuestro equipo."
-      },
-      {
-        // Sector 4: Abajo Derecha (120° a 160°)
-        type: 'spin_again',
-        bg: "#adb8c6",
-        orientation: 'outward',
-        isWin: false,
-        isSpinAgain: true,
-        titleModal: "Gira de nuevo",
-        header: "¡Otra oportunidad!",
-        detail: "¡Tienes un giro adicional gratis!"
-      },
-      {
-        // Sector 5: Abajo Centro (160° a 200°)
-        type: 'faces',
-        bg: "#3b96c4",
-        orientation: 'outward',
-        isWin: false,
-        titleModal: "Siga participando",
-        header: "¡Gracias por participar!",
-        detail: "Esperamos que disfrutes tu visita a nuestra tienda CIC."
-      },
-      {
-        // Sector 6: Abajo Izquierda (200° a 240°)
-        type: 'gift',
-        bg: "#303d44",
-        orientation: 'outward',
-        isWin: true,
-        titleModal: "Regalo CIC",
-        header: "¡Felicitaciones!",
-        detail: "¡Ganaste un Regalo Sorpresa CIC!"
-      },
-      {
-        // Sector 7: Izquierda (240° a 280°)
-        type: 'faces',
-        bg: "#adb8c6",
-        orientation: 'outward',
-        isWin: false,
-        titleModal: "Siga participando",
-        header: "¡Casi!",
-        detail: "¡Sigue participando con CIC!"
-      },
-      {
-        // Sector 8: Arriba Izquierda (280° a 320°)
-        type: 'discount',
-        bg: "#3b96c4",
-        orientation: 'inward',
-        isWin: true,
-        titleModal: "5% OFF en el total de tu boleta",
-        header: "¡Premio Especial!",
-        detail: "Aplica tu 5% OFF en el total de tu boleta al pagar."
-      },
-      {
-        // Sector 9: Arriba Centro-Izquierda (320° a 360°)
-        type: 'gift',
-        bg: "#303d44",
-        orientation: 'inward',
-        isWin: true,
-        titleModal: "Regalo CIC",
-        header: "¡Felicitaciones!",
-        detail: "¡Te llevas un Regalo exclusivo CIC!"
-      }
-    ];
-
-    const canvas = document.getElementById('wheelCanvas');
-    const ctx = canvas.getContext('2d');
-    const NUM_SECTORS = EXACT_9_SECTORS.length; // 9 sectores exactos como en la imagen
-    const ARC_ANGLE = (2 * Math.PI) / NUM_SECTORS;
-
-    let currentRotation = 0; // A las 0 rad, la división entre el sector 9 y el sector 1 queda exactamente a las 12:00
-    let angularVelocity = 0;
-    const friction = 0.989;
-    let isSpinning = false;
+        .fullscreen-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <button class="fullscreen-btn" onclick="toggleFullScreen()">⛶ Pantalla Completa</button>
     
-    // Variables para Arrastre (Swipe)
-    let isDragging = false;
-    let dragStartAngle = 0;
-    let lastDragAngle = 0;
+    <div class="header">
+        <h1>¡Gira y Gana!</h1>
+        <p>Descubre tu premio</p>
+    </div>
 
-    // Variables para Carga (Hold to Charge) con medidor visual y sonoro
-    let isCharging = false;
-    let chargeStartTime = 0;
-    let lastChargeStepSound = -1;
-    const maxChargeDuration = 2000; // 2 segundos para llegar al 100% de intensidad
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="800" height="800"></canvas>
+        <div class="center-logo" id="spinButton">
+            <h2>CIC</h2>
+            <span>114 AÑOS</span>
+        </div>
+    </div>
 
-    let soundEnabled = true;
-    let lastSectorIndex = -1;
+    <script>
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinButton = document.getElementById('spinButton');
+        
+        // Colores corporativos de la imagen
+        const prizes = [
+            { text: "Siga participando", color: "#4fb2d9", icon: "😔" },
+            { text: "Regalo CIC", color: "#324451", icon: "🎁" },
+            { text: "Gira de nuevo", color: "#c1c6c8", icon: "🔄" },
+            { text: "Siga participando", color: "#4fb2d9", icon: "😔" },
+            { text: "Regalo CIC", color: "#324451", icon: "🎁" },
+            { text: "Siga participando", color: "#c1c6c8", icon: "😔" }
+        ];
 
-    // =====================================================================
-    // SÍNTESIS DE SONIDO PURA (INCLUYE SONIDO DE CARGA DE INTENSIDAD)
-    // =====================================================================
-    let audioCtx = null;
+        let currentAngle = 0;
+        let isSpinning = false;
+        let spinVelocity = 0;
+        const friction = 0.985;
+        
+        function drawWheel() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = canvas.width / 2;
+            const sliceAngle = (2 * Math.PI) / prizes.length;
 
-    function getAudioContext() {
-      if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) {
-          audioCtx = new AudioContext();
-        }
-      }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      return audioCtx;
-    }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function playChargePulseSound(powerRatio) {
-      if (!soundEnabled) return;
-      const ctxAudio = getAudioContext();
-      if (!ctxAudio) return;
+            for (let i = 0; i < prizes.length; i++) {
+                const startAngle = currentAngle + i * sliceAngle;
+                const endAngle = startAngle + sliceAngle;
 
-      const osc = ctxAudio.createOscillator();
-      const gain = ctxAudio.createGain();
-      osc.type = 'sine';
-      const now = ctxAudio.currentTime;
-      // Frecuencia sube de 220Hz a 880Hz según la intensidad cargada
-      const freq = 220 + (powerRatio * 660);
-      osc.frequency.setValueAtTime(freq, now);
-      osc.frequency.exponentialRampToValueAtTime(freq * 1.12, now + 0.06);
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.fillStyle = prizes[i].color;
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = "#ffffff";
+                ctx.stroke();
 
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
-
-      osc.connect(gain);
-      gain.connect(ctxAudio.destination);
-      osc.start(now);
-      osc.stop(now + 0.07);
-    }
-
-    function playTickSound() {
-      if (!soundEnabled) return;
-      const ctxAudio = getAudioContext();
-      if (!ctxAudio) return;
-
-      const osc = ctxAudio.createOscillator();
-      const gain = ctxAudio.createGain();
-      osc.type = 'triangle';
-      const now = ctxAudio.currentTime;
-      osc.frequency.setValueAtTime(700, now);
-      osc.frequency.exponentialRampToValueAtTime(130, now + 0.035);
-
-      gain.gain.setValueAtTime(0.32, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
-
-      osc.connect(gain);
-      gain.connect(ctxAudio.destination);
-      osc.start(now);
-      osc.stop(now + 0.04);
-    }
-
-    function playWinSound() {
-      if (!soundEnabled) return;
-      const ctxAudio = getAudioContext();
-      if (!ctxAudio) return;
-
-      const notes = [523.25, 659.25, 783.99, 1046.50];
-      notes.forEach((freq, idx) => {
-        const osc = ctxAudio.createOscillator();
-        const gain = ctxAudio.createGain();
-        osc.type = 'triangle';
-        const startTime = ctxAudio.currentTime + idx * 0.11;
-        osc.frequency.setValueAtTime(freq, startTime);
-
-        gain.gain.setValueAtTime(0.26, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
-
-        osc.connect(gain);
-        gain.connect(ctxAudio.destination);
-        osc.start(startTime);
-        osc.stop(startTime + 0.46);
-      });
-    }
-
-    function playNeutralSound() {
-      if (!soundEnabled) return;
-      const ctxAudio = getAudioContext();
-      if (!ctxAudio) return;
-
-      const notes = [440, 392];
-      notes.forEach((freq, idx) => {
-        const osc = ctxAudio.createOscillator();
-        const gain = ctxAudio.createGain();
-        osc.type = 'sine';
-        const startTime = ctxAudio.currentTime + idx * 0.16;
-        osc.frequency.setValueAtTime(freq, startTime);
-
-        gain.gain.setValueAtTime(0.2, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
-
-        osc.connect(gain);
-        gain.connect(ctxAudio.destination);
-        osc.start(startTime);
-        osc.stop(startTime + 0.32);
-      });
-    }
-
-    // =====================================================================
-    // DIBUJO VECTORIAL IDÉNTICO A LA GRÁFICA DE CIC (BLANCO PURO)
-    // =====================================================================
-    function drawGiftBagGraphic(c, yOffset) {
-      c.save();
-      c.translate(0, yOffset);
-      c.strokeStyle = '#ffffff';
-      c.fillStyle = '#ffffff';
-      c.lineWidth = 4.2;
-      c.lineCap = 'round';
-      c.lineJoin = 'round';
-
-      // Bolsa trapecio (izquierda)
-      c.beginPath();
-      c.moveTo(-48, -22);
-      c.lineTo(-4, -22);
-      c.lineTo(0, 26);
-      c.lineTo(-52, 26);
-      c.closePath();
-      c.stroke();
-
-      // Asa superior de la bolsa
-      c.beginPath();
-      c.arc(-26, -22, 11, Math.PI, 0, false);
-      c.stroke();
-
-      // Cuerda interior de la bolsa con topes circulares
-      c.beginPath();
-      c.arc(-26, -10, 9, 0, Math.PI, false);
-      c.stroke();
-      c.beginPath();
-      c.arc(-35, -10, 2.5, 0, Math.PI * 2);
-      c.arc(-17, -10, 2.5, 0, Math.PI * 2);
-      c.fill();
-
-      // Caja de regalo (derecha, ligeramente superpuesta)
-      c.beginPath();
-      c.rect(2, -2, 34, 28);
-      c.stroke();
-
-      // Tapa de la caja
-      c.beginPath();
-      c.rect(-1, -10, 40, 8);
-      c.stroke();
-
-      // Cintas cruzadas
-      c.beginPath();
-      c.moveTo(19, -10);
-      c.lineTo(19, 26);
-      c.moveTo(2, 12);
-      c.lineTo(36, 12);
-      c.stroke();
-
-      // Moño superior del regalo
-      c.beginPath();
-      c.ellipse(13, -15, 7, 4, -0.35, 0, Math.PI * 2);
-      c.stroke();
-      c.beginPath();
-      c.ellipse(25, -15, 7, 4, 0.35, 0, Math.PI * 2);
-      c.stroke();
-
-      c.restore();
-    }
-
-    function drawThreeFacesGraphic(c, yOffset, bgColor) {
-      c.save();
-      c.translate(0, yOffset);
-      c.strokeStyle = '#ffffff';
-      c.fillStyle = '#ffffff';
-      c.lineWidth = 3.8;
-      c.lineCap = 'round';
-
-      // Carita izquierda (seria)
-      c.beginPath();
-      c.arc(-40, -10, 21, 0, Math.PI * 2);
-      c.stroke();
-      c.beginPath();
-      c.arc(-47, -15, 2.8, 0, Math.PI * 2);
-      c.arc(-33, -15, 2.8, 0, Math.PI * 2);
-      c.fill();
-      c.beginPath();
-      c.moveTo(-47, -3);
-      c.lineTo(-33, -3);
-      c.stroke();
-
-      // Carita derecha (triste)
-      c.beginPath();
-      c.arc(40, -10, 21, 0, Math.PI * 2);
-      c.stroke();
-      c.beginPath();
-      c.arc(33, -15, 2.8, 0, Math.PI * 2);
-      c.arc(47, -15, 2.8, 0, Math.PI * 2);
-      c.fill();
-      c.beginPath();
-      c.arc(40, 2, 8, Math.PI * 1.15, Math.PI * 1.85, false);
-      c.stroke();
-
-      // Carita central grande (feliz, superpuesta al frente)
-      c.beginPath();
-      c.arc(0, 8, 29, 0, Math.PI * 2);
-      c.fillStyle = bgColor;
-      c.fill();
-      c.stroke();
-
-      c.fillStyle = '#ffffff';
-      c.beginPath();
-      c.arc(-10, 1, 3.5, 0, Math.PI * 2);
-      c.arc(10, 1, 3.5, 0, Math.PI * 2);
-      c.fill();
-
-      // Sonrisa gruesa abierta
-      c.lineWidth = 5;
-      c.beginPath();
-      c.arc(0, 10, 11, 0.15 * Math.PI, 0.85 * Math.PI, false);
-      c.stroke();
-
-      c.restore();
-    }
-
-    function drawSpinAgainGraphic(c, yOffset) {
-      c.save();
-      c.translate(0, yOffset);
-      c.strokeStyle = '#ffffff';
-      c.lineWidth = 4.2;
-      c.lineCap = 'round';
-      c.lineJoin = 'round';
-
-      const r = 34;
-      // Flecha curva superior
-      c.beginPath();
-      c.arc(0, 0, r, -Math.PI * 0.82, -Math.PI * 0.18, false);
-      c.stroke();
-      c.beginPath();
-      c.moveTo(22, -26);
-      c.lineTo(32, -14);
-      c.lineTo(17, -12);
-      c.stroke();
-
-      // Flecha curva inferior
-      c.beginPath();
-      c.arc(0, 0, r, Math.PI * 0.18, Math.PI * 0.82, false);
-      c.stroke();
-      c.beginPath();
-      c.moveTo(-22, 26);
-      c.lineTo(-32, 14);
-      c.lineTo(-17, 12);
-      c.stroke();
-
-      c.restore();
-    }
-
-    function drawFivePercentGraphic(c, yOffset) {
-      c.save();
-      c.translate(0, yOffset);
-      c.fillStyle = '#ffffff';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-
-      // Gran número 5 blanco como en la imagen
-      c.font = '900 94px Montserrat, sans-serif';
-      c.fillText('5', -14, 0);
-
-      // % OFF al costado derecho del 5
-      c.font = '800 17px Montserrat, sans-serif';
-      c.fillText('% OFF', 32, 4);
-
-      c.restore();
-    }
-
-    function renderWheel() {
-      const w = canvas.width;
-      const h = canvas.height;
-      const cx = w / 2;
-      const cy = h / 2;
-      const outerRadius = Math.min(cx, cy) - 10;
-      const innerColorRadius = outerRadius - 30; // Ancho del borde perimetral oscuro (#303d44)
-
-      ctx.clearRect(0, 0, w, h);
-
-      // 1. Fondo circular completo del borde exterior oscuro (#303d44)
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, outerRadius, 0, 2 * Math.PI);
-      ctx.fillStyle = '#303d44';
-      ctx.fill();
-      ctx.restore();
-
-      // 2. Dibujar cada uno de los 9 sectores exactos
-      for (let i = 0; i < NUM_SECTORS; i++) {
-        const sector = EXACT_9_SECTORS[i];
-        // A currentRotation = 0, el sector 0 empieza exactamente a las 12:00 (-PI/2)
-        const startAngle = currentRotation + i * ARC_ANGLE - Math.PI / 2;
-        const endAngle = startAngle + ARC_ANGLE;
-
-        // En la imagen original, los sectores celestes (#3b96c4) y grises claros (#adb8c6) llegan hasta innerColorRadius
-        // dejando el borde exterior oscuro (#303d44), excepto donde se indique
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, innerColorRadius, startAngle, endAngle);
-        ctx.closePath();
-        ctx.fillStyle = sector.bg;
-        ctx.fill();
-        ctx.restore();
-
-        // Dibujar textos e íconos dentro del sector
-        ctx.save();
-        ctx.translate(cx, cy);
-        const midAngle = startAngle + ARC_ANGLE / 2;
-        ctx.rotate(midAngle);
-
-        const radiusCenter = innerColorRadius * 0.61;
-        ctx.translate(radiusCenter, 0);
-
-        // Si orientation === 'inward', la parte superior del texto mira hacia el centro (rotación -PI/2)
-        // Si orientation === 'outward', la parte superior del texto mira hacia el borde exterior (rotación +PI/2)
-        if (sector.orientation === 'inward') {
-          ctx.rotate(-Math.PI / 2);
-        } else {
-          ctx.rotate(Math.PI / 2);
+                // Textos rotados
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = "right";
+                
+                // Color de texto dinámico (oscuro sobre fondo claro, blanco sobre oscuro)
+                ctx.fillStyle = (prizes[i].color === "#c1c6c8") ? "#2c3e50" : "#ffffff";
+                
+                ctx.font = "bold 40px Arial";
+                ctx.fillText(prizes[i].icon, radius - 40, 15);
+                ctx.font = "bold 26px Arial";
+                ctx.fillText(prizes[i].text, radius - 100, 10);
+                ctx.restore();
+            }
         }
 
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#ffffff';
-        ctx.textAlign = 'center';
+        function animate() {
+            if (isSpinning) {
+                currentAngle += spinVelocity;
+                spinVelocity *= friction;
 
-        if (sector.type === 'discount') {
-          //En los sectores 5% OFF, el 5 grande va más cerca del centro y el texto más hacia el borde
-          if (sector.orientation === 'inward') {
-            drawFivePercentGraphic(ctx, -28);
-            ctx.font = '700 20px Montserrat, sans-serif';
-            ctx.fillText('en el total', 0, 34);
-            ctx.fillText('de tu boleta', 0, 56);
-          } else {
-            drawFivePercentGraphic(ctx, -28);
-            ctx.font = '700 20px Montserrat, sans-serif';
-            ctx.fillText('en el total', 0, 34);
-            ctx.fillText('de tu boleta', 0, 56);
-          }
-        } else if (sector.type === 'faces') {
-          if (sector.orientation === 'inward') {
-            drawThreeFacesGraphic(ctx, -24, sector.bg);
-            ctx.font = '700 20px Montserrat, sans-serif';
-            ctx.fillText('Siga', 0, 34);
-            ctx.fillText('participando', 0, 56);
-          } else {
-            drawThreeFacesGraphic(ctx, -24, sector.bg);
-            ctx.font = '700 20px Montserrat, sans-serif';
-            ctx.fillText('Siga', 0, 34);
-            ctx.fillText('participando', 0, 56);
-          }
-        } else if (sector.type === 'gift') {
-          drawGiftBagGraphic(ctx, -28);
-          ctx.font = '700 21px Montserrat, sans-serif';
-          ctx.fillText('Regalo', 0, 26);
-          ctx.font = '900 42px Cinzel, serif';
-          ctx.fillText('CIC', 0, 64);
-        } else if (sector.type === 'spin_again') {
-          drawSpinAgainGraphic(ctx, -24);
-          ctx.font = '700 20px Montserrat, sans-serif';
-          ctx.fillText('Gira de', 0, 36);
-          ctx.fillText('nuevo', 0, 58);
+                if (spinVelocity < 0.002) {
+                    isSpinning = false;
+                    spinVelocity = 0;
+                }
+                drawWheel();
+                requestAnimationFrame(animate);
+            }
         }
 
-        ctx.restore();
-      }
+        spinButton.addEventListener('click', () => {
+            if (!isSpinning) {
+                // Impulso aleatorio para que no caiga siempre en el mismo lugar
+                spinVelocity = Math.random() * 0.2 + 0.3; 
+                isSpinning = true;
+                animate();
+            }
+        });
 
-      // 3. Línea blanca circular continua cerca del borde (exactamente como en la imagen enviada, sin puntos)
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, innerColorRadius - 18, 0, 2 * Math.PI);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3.5;
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function getSelectedSectorIndex() {
-      // La aguja está a las 12:00 (-PI/2). Como el sector 0 comienza en -PI/2 cuando currentRotation = 0:
-      const normalized = ((-currentRotation % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
-      return Math.floor(normalized / ARC_ANGLE) % NUM_SECTORS;
-    }
-
-    /* =====================================================================
-       MECÁNICAS DE FÍSICA E INTERACCIÓN AVANZADA (SWIPE & MEDIDOR DE CARGA)
-       ===================================================================== */
-    function checkTick() {
-      const currentIdx = getSelectedSectorIndex();
-      if (currentIdx !== lastSectorIndex) {
-        lastSectorIndex = currentIdx;
-        playTickSound();
-        const flapper = document.getElementById('flapperPin');
-        if (flapper) {
-          flapper.classList.remove('indicator-kick');
-          void flapper.offsetWidth;
-          flapper.classList.add('indicator-kick');
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
         }
-      }
-    }
 
-    function physicsLoop() {
-      if (isDragging || isCharging) return;
-      if (!isSpinning && Math.abs(angularVelocity) < 0.001) return;
-
-      currentRotation += angularVelocity;
-      angularVelocity *= friction;
-      
-      renderWheel();
-      checkTick();
-
-      if (Math.abs(angularVelocity) < 0.0014) {
-        isSpinning = false;
-        angularVelocity = 0;
-        const finalSectorIdx = getSelectedSectorIndex();
-        handleResult(EXACT_9_SECTORS[finalSectorIdx]);
-        return;
-      }
-      
-      requestAnimationFrame(physicsLoop);
-    }
-
-    /* === Lógica de Arrastre (Swipe) en el Canvas === */
-    function getPointerAngle(evt) {
-      const rect = canvas.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
-      const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
-      return Math.atan2(clientY - cy, clientX - cx);
-    }
-
-    function onDragStart(e) {
-      e.preventDefault();
-      getAudioContext();
-      if (isCharging || (isSpinning && Math.abs(angularVelocity) > 0.15)) return;
-      
-      isDragging = true;
-      isSpinning = false;
-      angularVelocity = 0;
-      
-      const angle = getPointerAngle(e);
-      dragStartAngle = angle - currentRotation;
-      lastDragAngle = angle;
-      
-      canvas.classList.replace('cursor-grab', 'cursor-grabbing');
-    }
-
-    function onDragMove(e) {
-      if (!isDragging) return;
-      e.preventDefault();
-      
-      const angle = getPointerAngle(e);
-      let newRotation = angle - dragStartAngle;
-      
-      let delta = angle - lastDragAngle;
-      while (delta > Math.PI) delta -= Math.PI * 2;
-      while (delta < -Math.PI) delta += Math.PI * 2;
-      
-      angularVelocity = delta;
-      currentRotation = newRotation;
-      lastDragAngle = angle;
-      
-      renderWheel();
-      checkTick();
-    }
-
-    function onDragEnd() {
-      if (!isDragging) return;
-      isDragging = false;
-      canvas.classList.replace('cursor-grabbing', 'cursor-grab');
-      
-      if (Math.abs(angularVelocity) > 0.015) {
-        isSpinning = true;
-        // Amplificar ligeramente el impulso táctil para que sea cómodo en pantalla grande
-        angularVelocity = Math.sign(angularVelocity) * Math.min(Math.abs(angularVelocity) * 1.45, 0.95);
-        requestAnimationFrame(physicsLoop);
-      }
-    }
-
-    /* === Lógica de Carga con Medidor Visual de Intensidad (0% a 100%) === */
-    const RING_CIRCUMFERENCE = 351.86; // 2 * PI * 56
-
-    function updatePowerUI(powerRatio) {
-      const ring = document.getElementById('powerRingCircle');
-      const badge = document.getElementById('chargeBadge');
-      const textInd = document.getElementById('chargeTextIndicator');
-      const btn = document.getElementById('centerLogoBtn');
-
-      const pct = Math.round(powerRatio * 100);
-      const offset = RING_CIRCUMFERENCE - (powerRatio * RING_CIRCUMFERENCE);
-      ring.style.strokeDashoffset = offset;
-
-      // Color progresivo: Celeste CIC -> Ámbar -> Rojo Potencia Máxima
-      let colorHex = '#3b96c4';
-      if (pct >= 85) {
-        colorHex = '#ef4444'; // Rojo intenso
-      } else if (pct >= 45) {
-        colorHex = '#f59e0b'; // Naranja/Ámbar
-      }
-
-      ring.style.stroke = colorHex;
-      badge.style.backgroundColor = colorHex;
-      textInd.textContent = `FUERZA: ${pct}%`;
-
-      if (pct >= 95) {
-        btn.classList.add('max-power-shake');
-      } else {
-        btn.classList.remove('max-power-shake');
-        btn.style.transform = `translate(-50%, -50%) scale(${1 + powerRatio * 0.06})`;
-      }
-      btn.style.boxShadow = `0 0 ${25 + powerRatio * 55}px ${powerRatio * 22}px ${colorHex}88`;
-    }
-
-    function resetPowerUI() {
-      const ring = document.getElementById('powerRingCircle');
-      const badge = document.getElementById('chargeBadge');
-      const textInd = document.getElementById('chargeTextIndicator');
-      const btn = document.getElementById('centerLogoBtn');
-
-      ring.style.strokeDashoffset = RING_CIRCUMFERENCE;
-      ring.style.stroke = '#3b96c4';
-      badge.style.backgroundColor = '#3b96c4';
-      textInd.textContent = 'MANTÉN PRESIONADO';
-      btn.classList.remove('max-power-shake');
-      btn.style.transform = 'translate(-50%, -50%) scale(1)';
-      btn.style.boxShadow = '';
-    }
-
-    function startCharge(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      getAudioContext();
-      if (isSpinning || isDragging) return;
-
-      isCharging = true;
-      chargeStartTime = performance.now();
-      lastChargeStepSound = -1;
-
-      animateCharge();
-    }
-
-    function animateCharge() {
-      if (!isCharging) return;
-      const now = performance.now();
-      const elapsed = now - chargeStartTime;
-      // Oscilación suave si mantiene presionado después del 100% para hacerlo más dinámico
-      let rawRatio = elapsed / maxChargeDuration;
-      let power = rawRatio <= 1 ? rawRatio : 1 - Math.abs(((rawRatio - 1) % 0.4) - 0.2);
-      power = Math.max(0.05, Math.min(1.0, power));
-
-      updatePowerUI(power);
-
-      // Emitir pulso sonoro ascendente cada 10% de carga
-      const step = Math.floor(power * 12);
-      if (step !== lastChargeStepSound) {
-        lastChargeStepSound = step;
-        playChargePulseSound(power);
-      }
-      
-      requestAnimationFrame(animateCharge);
-    }
-
-    function endCharge(e) {
-      if (!isCharging) return;
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      isCharging = false;
-
-      const now = performance.now();
-      const elapsed = now - chargeStartTime;
-      let power = Math.min(elapsed / maxChargeDuration, 1.0);
-      // Si el usuario sólo hizo un toque rápido ("tap"), igual le damos un giro base de cortesía
-      if (power < 0.12) power = 0.35;
-
-      resetPowerUI();
-
-      isSpinning = true;
-      angularVelocity = 0.22 + (power * 0.72) + (Math.random() * 0.08);
-      requestAnimationFrame(physicsLoop);
-    }
-
-    // =====================================================================
-    // PRESENTACIÓN DEL RESULTADO Y CELEBRACIÓN (CON ICONOS SVG NATIVOS)
-    // =====================================================================
-    function handleResult(sector) {
-      const modal = document.getElementById('prizeModal');
-      const box = document.getElementById('modalBox');
-      const headerEl = document.getElementById('modalHeader');
-      const titleEl = document.getElementById('modalTitle');
-      const descEl = document.getElementById('modalDesc');
-      const iconContainer = document.getElementById('modalIconContainer');
-
-      headerEl.textContent = sector.header;
-      titleEl.textContent = sector.titleModal;
-      descEl.textContent = sector.detail;
-
-      if (sector.isWin) {
-        iconContainer.innerHTML = `
-          <svg class="w-12 h-12 text-[#3b96c4]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <circle cx="12" cy="8" r="7"></circle>
-            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-          </svg>`;
-        playWinSound();
-        if (typeof confetti === 'function') {
-          confetti({
-            particleCount: 95,
-            spread: 80,
-            origin: { y: 0.6 }
-          });
-        }
-      } else if (sector.isSpinAgain) {
-        iconContainer.innerHTML = `
-          <svg class="w-12 h-12 text-[#3b96c4]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>`;
-        playWinSound();
-      } else {
-        iconContainer.innerHTML = `
-          <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-            <line x1="9" y1="9" x2="9.01" y2="9"></line>
-            <line x1="15" y1="9" x2="15.01" y2="9"></line>
-          </svg>`;
-        playNeutralSound();
-      }
-
-      safeRenderIcons();
-
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-        box.classList.remove('scale-95', 'opacity-0');
-        box.classList.add('scale-100', 'opacity-100');
-      }, 30);
-    }
-
-    function closePrizeModal() {
-      const modal = document.getElementById('prizeModal');
-      const box = document.getElementById('modalBox');
-      box.classList.remove('scale-100', 'opacity-100');
-      box.classList.add('scale-95', 'opacity-0');
-      setTimeout(() => {
-        modal.classList.add('hidden');
-      }, 200);
-      
-      isSpinning = false;
-      angularVelocity = 0;
-    }
-
-    // CONTROLES DE PANTALLA COMPLETA Y SONIDO
-    document.getElementById('soundToggleBtn')?.addEventListener('click', () => {
-      soundEnabled = !soundEnabled;
-      document.getElementById('soundOnSvg')?.classList.toggle('hidden', !soundEnabled);
-      document.getElementById('soundOffSvg')?.classList.toggle('hidden', soundEnabled);
-    });
-
-    document.getElementById('fullscreenBtn')?.addEventListener('click', () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
-        document.exitFullscreen().catch(() => {});
-      }
-    });
-
-    // INICIALIZACIÓN Y EVENT LISTENERS TÁCTILES
-    window.onload = function() {
-      safeRenderIcons();
-      renderWheel();
-
-      // Configurar Swipe en el Canvas
-      canvas.addEventListener('mousedown', onDragStart);
-      window.addEventListener('mousemove', onDragMove);
-      window.addEventListener('mouseup', onDragEnd);
-
-      canvas.addEventListener('touchstart', onDragStart, {passive: false});
-      window.addEventListener('touchmove', onDragMove, {passive: false});
-      window.addEventListener('touchend', onDragEnd);
-
-      // Configurar Hold to Charge en el Botón Central
-      const centerBtn = document.getElementById('centerLogoBtn');
-      centerBtn.addEventListener('mousedown', startCharge);
-      window.addEventListener('mouseup', endCharge);
-      
-      centerBtn.addEventListener('touchstart', startCharge, {passive: false});
-      window.addEventListener('touchend', endCharge);
-    };
-
-    window.addEventListener('resize', () => {
-      renderWheel();
-    });
-  </script>
+        // Dibujar estado inicial
+        drawWheel();
+    </script>
 </body>
 </html>
